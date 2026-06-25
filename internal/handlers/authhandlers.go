@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"access-control-layer/internal/services"
@@ -20,9 +21,19 @@ func NewAuthHandler(authService services.AuthService) *AuthHandler {
 
 func (h *AuthHandler) Validate(c *gin.Context) {
 
-	token := c.GetHeader("Authorization")
+	token, err := c.Cookie("playback_token")
 
-	ok, err := h.authService.Validate(token)
+	if err != nil{
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	log.Printf("Token: %v", token)
+	
+	claims, err := h.authService.Validate(token)
+
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": err.Error(),
@@ -30,7 +41,9 @@ func (h *AuthHandler) Validate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"valid": ok,
-	})
+	c.Header("X-User-Id", claims.UserID)
+	c.Header("X-Video-Id", claims.VideoID)
+	c.Header("X-Session-Id", claims.SessionID)
+
+	c.Status(http.StatusOK)
 }
