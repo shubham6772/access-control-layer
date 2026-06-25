@@ -12,13 +12,19 @@ type JwtClient struct {
 	secretKey string
 }
 
+type Claims struct {
+	UserID    string
+	SessionID string
+	VideoID   string
+}
+
 func NewJwtClient(jwtConf *config.JwtConfig) *JwtClient {
 	return &JwtClient{
 		secretKey: jwtConf.SecretKey,
 	}
 }
 
-func (j *JwtClient) Validate(tokenString string) (string, error) {
+func (j *JwtClient) Validate(tokenString string) (*Claims, error) {
 
 	token, err := jwtlib.Parse(tokenString, func(token *jwtlib.Token) (interface{}, error) {
 
@@ -30,22 +36,36 @@ func (j *JwtClient) Validate(tokenString string) (string, error) {
 	})
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if !token.Valid {
-		return "", errors.New("invalid token")
+		return nil, errors.New("invalid token")
 	}
 
-	claims, ok := token.Claims.(jwtlib.MapClaims)
+	mapClaims, ok := token.Claims.(jwtlib.MapClaims)
 	if !ok {
-		return "", errors.New("invalid claims")
+		return nil, errors.New("invalid claims")
 	}
 
-	userID, ok := claims["user_id"].(string)
+	userID, ok := mapClaims["user_id"].(string)
 	if !ok {
-		return "", errors.New("user_id missing")
+		return nil, errors.New("user_id missing")
 	}
 
-	return userID, nil
+	sessionID, ok := mapClaims["session_id"].(string)
+	if !ok {
+		return nil, errors.New("session_id missing")
+	}
+
+	videoID, ok := mapClaims["video_id"].(string)
+	if !ok {
+		return nil, errors.New("video_id missing")
+	}
+
+	return &Claims{
+		UserID:    userID,
+		SessionID: sessionID,
+		VideoID:   videoID,
+	}, nil
 }
