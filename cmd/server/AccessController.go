@@ -15,6 +15,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const VERSION = "1.0.0"
 func main() {
 
 	logWriter, err := logger.Setup()
@@ -45,6 +46,7 @@ func main() {
 		ActuatorHandler: actuatorHandler,
 	}
 
+	log.Printf("Access Controll Layer Started VERSION: %s", VERSION)
 	// gin.SetMode(globalConf.GIN_MODE)
 	ginEngine := routes.Setup(router)
 	PORT := fmt.Sprintf(":%v", globalConf.PORT)
